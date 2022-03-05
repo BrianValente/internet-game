@@ -4,11 +4,18 @@ import tinycolor from "tinycolor2";
 import { CellStatus, Direction } from "./enums";
 import { Cell, Grid } from "./types";
 
-const SQUARE_SIZE = 50;
-const SQUARE_MARGIN = 5;
-const SQUARE_RADIUS = 10;
+const SQUARE_SIZE = 80;
+const SQUARE_MARGIN = 10;
+const SQUARE_RADIUS = 20;
+const SQUARES_MARGIN = 40;
+const IMAGE_MARGIN = 40;
 
-const WIDTH = (SQUARE_MARGIN + SQUARE_SIZE) * 10 + SQUARE_MARGIN;
+const WIDTH = (
+    (SQUARE_MARGIN + SQUARE_SIZE) * 10
+    + SQUARE_MARGIN
+    + (SQUARES_MARGIN * 2)
+    + (IMAGE_MARGIN * 2)
+);
 const HEIGHT = WIDTH;
 
 const SquareColor: { [key in CellStatus]: string } = {
@@ -18,24 +25,28 @@ const SquareColor: { [key in CellStatus]: string } = {
 };
 
 const getSquareCoords = (cell: Cell) => ({
-    x: cell.x * SQUARE_SIZE + (cell.x + 1) * SQUARE_MARGIN,
-    y: cell.y * SQUARE_SIZE + (cell.y + 1) * SQUARE_MARGIN,
+    x: cell.x * SQUARE_SIZE + (cell.x + 1) * SQUARE_MARGIN + SQUARES_MARGIN + IMAGE_MARGIN,
+    y: cell.y * SQUARE_SIZE + (cell.y + 1) * SQUARE_MARGIN + SQUARES_MARGIN + IMAGE_MARGIN,
 })
 
-const drawSquare = (context: canvasLib.CanvasRenderingContext2D, x: number, y: number, color: string) => {
+const drawRoundedRect = (context: canvasLib.CanvasRenderingContext2D, x: number, y: number, width: number, height: number, color: string, radius: number) => {
     context.fillStyle = color;
-    const coords = getSquareCoords({ x, y });
     context.beginPath();
-    context.moveTo(coords.x + SQUARE_RADIUS, coords.y);
-    context.arcTo(coords.x + SQUARE_SIZE, coords.y, coords.x + SQUARE_SIZE, coords.y + SQUARE_SIZE, SQUARE_RADIUS);
-    context.arcTo(coords.x + SQUARE_SIZE, coords.y + SQUARE_SIZE, coords.x, coords.y + SQUARE_SIZE, SQUARE_RADIUS);
-    context.arcTo(coords.x, coords.y + SQUARE_SIZE, coords.x, coords.y, SQUARE_RADIUS);
-    context.arcTo(coords.x, coords.y, coords.x + SQUARE_SIZE, coords.y, SQUARE_RADIUS);
+    context.moveTo(x + radius, y);
+    context.arcTo(x + width, y, x + width, y + height, radius);
+    context.arcTo(x + width, y + height, x, y + height, radius);
+    context.arcTo(x, y + height, x, y, radius);
+    context.arcTo(x, y, x + width, y, radius);
     context.closePath();
     context.fill();
 };
 
-const drawSquares = (context: canvasLib.CanvasRenderingContext2D, grid: Grid) => {
+const drawCell = (context: canvasLib.CanvasRenderingContext2D, x: number, y: number, color: string) => {
+    const coords = getSquareCoords({ x, y });
+    drawRoundedRect(context, coords.x, coords.y, SQUARE_SIZE, SQUARE_SIZE, color, SQUARE_RADIUS);
+};
+
+const drawCells = (context: canvasLib.CanvasRenderingContext2D, grid: Grid) => {
     for (let y = 0; y < grid.length; y++) {
         for (let x = 0; x < grid[y].length; x++) {
             const isOdd = (x + y) % 2 !== 0;
@@ -43,26 +54,12 @@ const drawSquares = (context: canvasLib.CanvasRenderingContext2D, grid: Grid) =>
             const color = isOdd
                 ? tColor.toHex8String()
                 : tColor.darken(10).toHex8String();
-            drawSquare(context, x, y, color);
+            context.shadowColor = tinycolor(color).setAlpha(0.8).toHex8String();
+            context.shadowBlur = 10;
+            context.shadowOffsetY = 5;
+            drawCell(context, x, y, color);
         }
     }
-};
-
-const drawArrow = (context: canvasLib.CanvasRenderingContext2D, from: Cell, to: Cell) => {
-    context.fillStyle = '#fafafa';
-    context.lineWidth = 6;
-    context.beginPath();
-    const fromSquareCoords = getSquareCoords(from);
-    const toSquareCoords = getSquareCoords(to);
-    context.moveTo(
-        fromSquareCoords.x + SQUARE_SIZE / 2,
-        fromSquareCoords.y + SQUARE_SIZE / 2,
-    );
-    context.lineTo(
-        toSquareCoords.x + SQUARE_SIZE / 2,
-        toSquareCoords.y + SQUARE_SIZE / 2,
-    );
-    context.stroke();
 };
 
 const drawArrows = (
@@ -71,6 +68,20 @@ const drawArrows = (
     startCell: Cell,
 ) => {
     let currentCell = startCell;
+    let to = getSquareCoords(currentCell);
+    context.strokeStyle = '#fafafa';
+    context.lineWidth = 14;
+    context.shadowColor = '#fafafa';
+    context.shadowBlur = 10;
+    context.shadowOffsetY = 0;
+    context.lineJoin = 'round';
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(
+        to.x + SQUARE_SIZE / 2,
+        to.y + SQUARE_SIZE / 2,
+    );
+
     for (let direction of steps) {
         let newX = currentCell.x;
         let newY = currentCell.y;
@@ -90,10 +101,15 @@ const drawArrows = (
                 break;
         }
 
-        const nextCell = { x: newX, y: newY };
-        drawArrow(context, currentCell, nextCell);
-        currentCell = nextCell;
+        currentCell = { x: newX, y: newY };
+        to = getSquareCoords(currentCell);
+        context.lineTo(
+            to.x + SQUARE_SIZE / 2,
+            to.y + SQUARE_SIZE / 2,
+        );
     }
+
+    context.stroke();
 };
 
 export const drawGrid = (name: string, grid: Grid, steps: Direction[], startCell: Cell) => {
@@ -103,7 +119,21 @@ export const drawGrid = (name: string, grid: Grid, steps: Direction[], startCell
     // context.fillStyle = '#222';
     // context.fillRect(0, 0, WIDTH, HEIGHT);
 
-    drawSquares(context, grid);
+    // Background
+    context.shadowColor = '#202020';
+    context.shadowBlur = 10;
+    context.shadowOffsetY = 10;
+    drawRoundedRect(
+        context,
+        IMAGE_MARGIN,
+        IMAGE_MARGIN,
+        WIDTH - (IMAGE_MARGIN * 2),
+        HEIGHT - (IMAGE_MARGIN * 2),
+        '#fcfcfc',
+        40,
+    )
+
+    drawCells(context, grid);
     drawArrows(context, steps, startCell);
 
     const buffer = canvas.toBuffer("image/png");

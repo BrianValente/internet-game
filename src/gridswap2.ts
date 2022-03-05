@@ -57,18 +57,18 @@ const impossibleGrid: StartingGrid = {
 };
 
 const discord: StartingGrid = {
-    name: 'discord2',
+    name: 'discord',
     grid:  [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 2, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-        [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+        [0, 2, 0, 0, 0, 0, 0, 0, 2, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ],
     cell: { x: 0, y: 0 },
 };
@@ -169,7 +169,7 @@ const checkSanity = (grid: Grid): Sanity => {
     }
 
     if (solvable && emptyCells.length === 0) return Sanity.SOLVED;
-    if (!solvable && emptyCells.length < 4) return Sanity.SOLVED;
+    if (!solvable && emptyCells.length < 3) return Sanity.SOLVED;
 
     floodFill(emptyCells[0]);
     return emptyCells.length !== occurrences.length ? Sanity.DISCONNECTED : Sanity.OKAY;
@@ -188,7 +188,7 @@ const main = (grid: Grid, steps: Direction[], position: Cell, firstRun: boolean 
     const sanity = checkSanity(grid);
     switch (sanity) {
         case Sanity.SOLVED:
-            console.log('\u0007SOLVED', steps);
+            console.log('\u0007SOLVED', JSON.stringify(steps));
             drawGrid(startingData.name, grid, steps, startingData.cell);
             exit(0);
         case Sanity.DISCONNECTED:
