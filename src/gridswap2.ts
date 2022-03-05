@@ -23,7 +23,7 @@ const SIZE = 10;
 */
 
 const easyGrid: StartingGrid = {
-    name: 'knownSolvableGrid',
+    name: 'easyGrid',
     grid: [
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -56,7 +56,41 @@ const impossibleGrid: StartingGrid = {
     cell: { x: 0, y: 0 },
 };
 
-const filename = fileURLToPath(import.meta.url);
+const discord: StartingGrid = {
+    name: 'discord2',
+    grid:  [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+        [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
+    ],
+    cell: { x: 0, y: 0 },
+};
+
+const myGame: StartingGrid = {
+    name: 'myGame',
+    grid:  [
+        [1, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
+    ],
+    cell: { x: 0, y: 0 },
+};
+
+const startingData = myGame;
 
 const getDirectionsAvailable = (grid: number[][], { x, y }: Cell): Direction[] => {
     const directions: Direction[] = [];
@@ -80,7 +114,7 @@ let attempts = 0;
 const attemptsToLog = 50000;
 const maxAttemptsBeforeReset = attemptsToLog;
 
-const isValid = (grid: Grid) => {
+const isSolvable = (grid: Grid) => {
     const obstacles: Cell[] = [];
 
     for (let y = 0; y < SIZE; y++) {
@@ -134,13 +168,15 @@ const checkSanity = (grid: Grid): Sanity => {
         floodFill({ x: cell.x + 1, y: cell.y });
     }
 
-    if (emptyCells.length === 0) return Sanity.SOLVED;
+    if (solvable && emptyCells.length === 0) return Sanity.SOLVED;
+    if (!solvable && emptyCells.length < 4) return Sanity.SOLVED;
+
     floodFill(emptyCells[0]);
     return emptyCells.length !== occurrences.length ? Sanity.DISCONNECTED : Sanity.OKAY;
 }
 
 let reset = false;
-const startingData = easyGrid;
+const solvable = isSolvable(startingData.grid)
 
 const main = (grid: Grid, steps: Direction[], position: Cell, firstRun: boolean = false) => {
     const handleDeadEnd = () => {
@@ -199,14 +235,11 @@ const main = (grid: Grid, steps: Direction[], position: Cell, firstRun: boolean 
     }
 }
 
+drawGrid(startingData.name, startingData.grid, [], startingData.cell);
 
-if (!isValid(startingData.grid)) {
-    console.error(`Unsolvable grid: ${name}`);
-    exit(1);
-}
 
 console.log(`Starting grid: ${startingData.name}`);
-drawGrid(startingData.name, startingData.grid, [], startingData.cell);
+if (!solvable) console.error('Unsolvable grid, trying my best');
 
 do {
     reset = false;
