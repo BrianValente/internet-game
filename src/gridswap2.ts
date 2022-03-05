@@ -1,29 +1,11 @@
 import _ from "lodash";
 import { exit } from "process";
 import { fileURLToPath } from "url";
+import { drawGrid } from "./canvas";
+import { Direction, CellStatus } from "./enums";
+import { StartingGrid, Cell, Grid } from "./types";
 
 const SIZE = 10;
-
-enum Direction {
-    UP = 'up',
-    DOWN = 'down',
-    LEFT = 'left',
-    RIGHT = 'right',
-};
-
-enum CellStatus {
-    EMPTY = 0,
-    FILLED = 1,
-    OBSTACLE = 2,
-}
-
-type Grid = number[][];
-type Cell = { x: number; y: number };
-type StartingGrid = {
-    name: string;
-    grid: Grid;
-    cell: Cell;
-}
 
 /*
 [
@@ -40,7 +22,7 @@ type StartingGrid = {
 ];
 */
 
-const knownSolvableGrid: StartingGrid = {
+const easyGrid: StartingGrid = {
     name: 'knownSolvableGrid',
     grid: [
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -55,134 +37,6 @@ const knownSolvableGrid: StartingGrid = {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ],
     cell: { x: 0, y: 0 },
-};
-
-// https://discord.com/channels/900766208939405334/908484444455854080/949435593413230632
-const discordGrid: StartingGrid = {
-    name: 'discordGrid',
-    grid: [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
-    ],
-    cell: { x: 0, y: 0 },
-};
-/*
-SOLVED [
-    'down',  'down',  'down',  'down',  'right', 'right', 'right',
-    'right', 'right', 'down',  'down',  'down',  'right', 'right',
-    'right', 'up',    'up',    'up',    'left',  'down',  'down',
-    'left',  'up',    'up',    'up',    'right', 'up',    'right',
-    'up',    'left',  'left',  'down',  'left',  'down',  'left',
-    'up',    'left',  'down',  'left',  'left',  'up',    'up',
-    'up',    'right', 'down',  'right', 'up',    'right', 'down',
-    'right', 'up',    'right', 'right', 'right', 'right', 'down',
-    'down',  'down',  'down',  'down',  'down',  'down',  'down',
-    'down',  'left',  'up',    'left',  'down',  'left',  'up',
-    'left',  'down',  'left',  'up',    'left',  'down',  'left',
-    'up',    'left',  'up',    'right', 'right', 'right', 'up',
-    'left',  'up',    'left',  'down',  'left',  'up',    'left',
-    'down',  'down',  'down',  'down'
-]
-*/
-
-// https://discord.com/channels/900766208939405334/908484444455854080/949455974085820546
-const discordGrid2: StartingGrid = {
-    name: 'discordGrid2',
-    grid: [
-        [1, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
-    ],
-    cell: { x: 0, y: 0 },
-};
-
-// Impossible
-// https://discord.com/channels/900766208939405334/908484444455854080/949461109398728795
-const discordGrid3: StartingGrid = {
-    name: 'discordGrid3',
-    grid: [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 2, 0, 0, 0, 0, 0, 2, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
-        [0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ],
-    cell: { x: 0, y: 0 },
-};
-
-// Impossible
-// https://discord.com/channels/900766208939405334/908484444455854080/949453964980674600
-const discordGrid4: StartingGrid = {
-    name: 'discordGrid4',
-    grid: [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 2, 0, 0, 0, 0, 0, 2, 0],
-        [0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ],
-    cell: { x: 0, y: 0 },
-};
-
-// https://discord.com/channels/900766208939405334/908484444455854080/949470945553301514
-const discordGrid5: StartingGrid = {
-    name: 'discordGrid5',
-    grid: [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
-        [2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 2, 0, 0, 0, 0, 0, 2, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ],
-    cell: { x: 0, y: 0 },
-};
-
-// arranca en 3, 6
-const padreGrid: StartingGrid = {
-    name: 'padreGrid',
-    grid:  [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 0, 0, 0, 0, 1, 0],
-        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ],
-    cell: { x: 3, y: 6 },
 };
 
 const impossibleGrid: StartingGrid = {
@@ -286,12 +140,9 @@ const checkSanity = (grid: Grid): Sanity => {
 }
 
 let reset = false;
-const maxTimePerNode = 1000;
+const startingData = easyGrid;
 
 const main = (grid: Grid, steps: Direction[], position: Cell, firstRun: boolean = false) => {
-    // const startTime = Date.now();
-    // const level = steps.length;
-
     const handleDeadEnd = () => {
         attempts++;
         // if (attempts % attemptsToLog === 0) console.log({ attempts });
@@ -302,6 +153,7 @@ const main = (grid: Grid, steps: Direction[], position: Cell, firstRun: boolean 
     switch (sanity) {
         case Sanity.SOLVED:
             console.log('\u0007SOLVED', steps);
+            drawGrid(startingData.name, grid, steps, startingData.cell);
             exit(0);
         case Sanity.DISCONNECTED:
             handleDeadEnd();
@@ -345,23 +197,20 @@ const main = (grid: Grid, steps: Direction[], position: Cell, firstRun: boolean 
         
         main(newGrid, newSteps, { x: newX, y: newY });
     }
-
-    // const endTime = Date.now() - startTime;
-    // if (endTime > 500) console.log({ level, endTime });
 }
 
-const { name, grid, cell } = knownSolvableGrid;
 
-if (!isValid(grid)) {
-    console.error(`Impossible grid: ${name}`);
+if (!isValid(startingData.grid)) {
+    console.error(`Unsolvable grid: ${name}`);
     exit(1);
 }
 
-console.log(`Starting grid: ${name}`);
+console.log(`Starting grid: ${startingData.name}`);
+drawGrid(startingData.name, startingData.grid, [], startingData.cell);
 
 do {
     reset = false;
-    main(grid, [], cell, false);
+    main(startingData.grid, [], startingData.cell, false);
     attempts = 0;
 } while (reset);
 
