@@ -5,9 +5,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node --no-warnings --experimental-specifier-resolution=node --loader ts-node/esm -r dotenv/config src/gridswap2.ts",
-    "startjs": "rm -rf lib && tsc && node lib/gridswap2.js",
-    "debug": "node --no-warnings --experimental-specifier-resolution=node --loader ts-node/esm -r dotenv/config --inspect-brk src/gridswap.ts"
+    "start": "node --no-warnings --experimental-specifier-resolution=node --loader ts-node/esm -r dotenv/config src/index.ts",
+    "startjs": "rm -rf lib && tsc && node lib/index.js",
+    "debug": "node --no-warnings --experimental-specifier-resolution=node --loader ts-node/esm -r dotenv/config --inspect-brk src/index.ts"
   },
   "author": "",
   "license": "ISC",

@@ -1,6 +1,7 @@
 import canvasLib from "canvas";
 import fs from "fs";
 import tinycolor from "tinycolor2";
+import { data } from ".";
 import { CellStatus, Direction } from "./enums";
 import { Cell, Grid } from "./types";
 
@@ -10,18 +11,23 @@ const SQUARE_RADIUS = 20;
 const SQUARES_MARGIN = 40;
 const IMAGE_MARGIN = 40;
 
-const WIDTH = (
-    (SQUARE_MARGIN + SQUARE_SIZE) * 10
-    + SQUARE_MARGIN
-    + (SQUARES_MARGIN * 2)
-    + (IMAGE_MARGIN * 2)
-);
-const HEIGHT = WIDTH;
+const getImageSize = (gridSize: number) => {
+    const width = (
+        (SQUARE_MARGIN + SQUARE_SIZE) * gridSize
+        + SQUARE_MARGIN
+        + (SQUARES_MARGIN * 2)
+        + (IMAGE_MARGIN * 2)
+    );
+    const height = width;
+
+    return { width, height };
+}
 
 const SquareColor: { [key in CellStatus]: string } = {
     [CellStatus.EMPTY]: '#33cc33',
     [CellStatus.FILLED]: '#8423ff',
     [CellStatus.OBSTACLE]: '#505050',
+    [CellStatus.CURSOR]: '#ffffff',
 };
 
 const getSquareCoords = (cell: Cell) => ({
@@ -46,15 +52,18 @@ const drawCell = (context: canvasLib.CanvasRenderingContext2D, x: number, y: num
     drawRoundedRect(context, coords.x, coords.y, SQUARE_SIZE, SQUARE_SIZE, color, SQUARE_RADIUS);
 };
 
-const drawCells = (context: canvasLib.CanvasRenderingContext2D, grid: Grid) => {
-    for (let y = 0; y < grid.length; y++) {
-        for (let x = 0; x < grid[y].length; x++) {
+const drawCells = (context: canvasLib.CanvasRenderingContext2D, grid: Grid, size: number) => {
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
             const isOdd = (x + y) % 2 !== 0;
             const tColor = tinycolor(SquareColor[grid[y][x]]);
-            const color = isOdd
+            const color = isOdd || grid[y][x] === CellStatus.CURSOR
                 ? tColor.toHex8String()
                 : tColor.darken(10).toHex8String();
-            context.shadowColor = tinycolor(color).setAlpha(0.8).toHex8String();
+            const shadowColor = tColor.getLuminance() > 0.8
+                ? tColor.darken(20).setAlpha(0.8).toHex8String()
+                : tColor.setAlpha(0.8).toHex8String();
+            context.shadowColor = shadowColor;
             context.shadowBlur = 10;
             context.shadowOffsetY = 5;
             drawCell(context, x, y, color);
@@ -113,11 +122,10 @@ const drawArrows = (
 };
 
 export const drawGrid = (name: string, grid: Grid, steps: Direction[], startCell: Cell) => {
-    const canvas = canvasLib.createCanvas(WIDTH, HEIGHT);
+    const gridSize = data.config.startingData.size;
+    const { width, height } = getImageSize(gridSize);
+    const canvas = canvasLib.createCanvas(width, height);
     const context = canvas.getContext("2d");
-
-    // context.fillStyle = '#222';
-    // context.fillRect(0, 0, WIDTH, HEIGHT);
 
     // Background
     context.shadowColor = '#202020';
@@ -127,13 +135,13 @@ export const drawGrid = (name: string, grid: Grid, steps: Direction[], startCell
         context,
         IMAGE_MARGIN,
         IMAGE_MARGIN,
-        WIDTH - (IMAGE_MARGIN * 2),
-        HEIGHT - (IMAGE_MARGIN * 2),
+        width - (IMAGE_MARGIN * 2),
+        height - (IMAGE_MARGIN * 2),
         '#fcfcfc',
         40,
     )
 
-    drawCells(context, grid);
+    drawCells(context, grid, gridSize);
     drawArrows(context, steps, startCell);
 
     const buffer = canvas.toBuffer("image/png");
