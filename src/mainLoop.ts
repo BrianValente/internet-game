@@ -32,8 +32,9 @@ export const mainLoop = (
     switch (sanity) {
         case GridStatus.SOLVED:
             grid[position.y][position.x] = CellStatus.CURSOR;
-            console.log('\u0007SOLVED', JSON.stringify(steps));
-            drawGrid(data.config.startingData.name, grid, steps, getCursor(data.config.startingData.grid));
+            console.log('\u0007SOLVED\n', JSON.stringify(steps), '\n');
+            const path = drawGrid(data.config.startingData.name, grid, steps, getCursor(data.config.startingData.grid));
+            console.log(`Image saved: ${path}`);
             process.exit(0);
         case GridStatus.DISCONNECTED:
         case GridStatus.TRAPPED:

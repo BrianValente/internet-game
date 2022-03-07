@@ -8,7 +8,7 @@ import { isSolvable } from "./utils/isSolvable";
 
 // Configuration
 const config = {
-    startingData: Grids.test12grid,
+    startingData: Grids.grid,
     attemptsToLog: Infinity,
     maxAttemptsBeforeReset: 1000,
 }
