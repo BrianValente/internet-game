@@ -145,7 +145,9 @@ export const drawGrid = (name: string, grid: Grid, steps: Direction[], startCell
     drawArrows(context, steps, startCell);
 
     const buffer = canvas.toBuffer("image/png");
-    const path = `./output/${name}.png`;
+    const folder = `./output`;
+    const path = `${folder}/${name}.png`;
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder);
     fs.writeFileSync(path, buffer);
     return path;
 }
